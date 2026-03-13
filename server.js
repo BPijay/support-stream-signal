@@ -52,7 +52,13 @@ wss.on('connection', (ws, req) => {
     if (room.viewer) { try { room.viewer.close(1011, 'Replaced'); } catch (_) {} }
     room.viewer = ws;
     console.log(`[${pin}] Viewer joined`);
-    safeSend(room.host, JSON.stringify({ type: 'viewer_joined' }));
+    // Delay gives the host's WebRTC peer connection time to fully initialize
+    // before receiving the viewer_joined trigger. Without this the host may
+    // receive the message before its receiver loop is listening.
+    setTimeout(() => {
+      console.log(`[${pin}] Sending viewer_joined to host`);
+      safeSend(room.host, JSON.stringify({ type: 'viewer_joined' }));
+    }, 800);
   }
 
   ws.on('message', (data) => {
